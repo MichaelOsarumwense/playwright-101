@@ -1,0 +1,46 @@
+name: Playwright Tests → Xray
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-and-report:
+    runs-on: ubuntu-latest
+
+    env:
+      # these should be set as GitHub Secrets in your repo settings
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}         # e.g. "https://yourcompany.atlassian.net"
+      XRAY_CLIENT_ID:  ${{ secrets.XRAY_CLIENT_ID }}      # for Xray Cloud v2
+      XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
+      PLAYWRIGHT_JUNIT_OUTPUT_NAME: results.xml
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Playwright tests (generate JUnit XML)
+        run: npx playwright test --reporter=junit
+
+      - name: Authenticate to Xray (Cloud v2)
+        id: auth
+        run: |
+          echo "::set-output name=token::$(curl -s -H 'Content-Type: application/json' \
+            -X POST --data "{\"client_id\":\"$XRAY_CLIENT_ID\",\"client_secret\":\"$XRAY_CLIENT_SECRET\"}" \
+            $JIRA_BASE_URL/rest/cloud/api/v2/authenticate | jq -r .token)"
+
+      - name: Import JUnit report into Xray
+        run: |
+          curl -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+               -H "Content-Type: application/xml" \
+               -X POST \
+               --data-binary @results.xml \
+               "$JIRA_BASE_URL/rest/raven/1.0/import/execution/junit?projectKey=YOUR_PROJECT_KEY"
