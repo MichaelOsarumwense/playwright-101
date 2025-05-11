@@ -7,6 +7,6 @@ test('test', async ({ page }) => {
   await page.getByRole('textbox', { name: 'What needs to be done?' }).press('Enter');
   await page.getByRole('textbox', { name: 'What needs to be done?' }).fill('ListTwo');
   await page.getByRole('textbox', { name: 'What needs to be done?' }).press('Enter');
- // await page.getByRole('link', { name: 'Completed' }).click();
-  await expect(page.getByText('Double-click to  a todo')).toBeVisible();
+  await page.getByRole('link', { name: 'Completed' }).click();
+  await expect(page.getByText('Double-click to edit a todo')).toBeVisible();
 });
