@@ -1,5 +1,9 @@
 name: Playwright Tests
 
+permissions:
+  contents: write    # allow pushing code
+  pages: write       # allow managing GitHub Pages
+  
 on:
   push:
     branches: [ main, master ]
